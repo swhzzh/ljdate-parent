@@ -12,6 +12,13 @@ import javax.servlet.http.HttpServletResponse;
 public interface UserApi {
 
     /**
+     * 注册
+     *
+     * @param reqParam 请求参数
+     */
+    void register(HttpServletResponse response, JSONObject reqParam);
+
+    /**
      * 登录
      *
      * @param response

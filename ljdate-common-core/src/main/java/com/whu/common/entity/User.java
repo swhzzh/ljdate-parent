@@ -10,6 +10,8 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.Date;
 
 @Data
 @NoArgsConstructor
@@ -31,7 +33,7 @@ public class User implements Serializable {
     private Integer auth;
     private String avatar;
     private Integer credit;
-    private String createTime;
-    private String updateTime;
+    private Timestamp createTime;
+    private Timestamp updateTime;
     private Integer valid;
 }

@@ -6,3 +6,17 @@ redis:
   poolMaxTotal: 1000
   poolMaxIdle: 500
   poolMaxWait: 500
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5673
+    username: guest
+    password: guest
+    listener:
+      simple:
+        concurrency: 10
+        max-concurrency: 20
+        prefetch: 5
+      concurrency: 10
+      max-concurrency: 20
+      prefetch: 5

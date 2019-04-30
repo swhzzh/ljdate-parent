@@ -22,6 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.sql.Timestamp;
+import java.util.Date;
 
 @Service
 public class UserApiImpl implements UserApi {
@@ -34,6 +36,23 @@ public class UserApiImpl implements UserApi {
 
     @Value("${img.server.url}")
     private String IMG_SERVER_URL;
+
+    /**
+     * 注册
+     *
+     * @param reqParam 请求参数
+     */
+    @Override
+    public void register(HttpServletResponse response,  JSONObject reqParam) {
+        User user = JSON.toJavaObject(reqParam, User.class);
+        user.setCreateTime(new Timestamp(System.currentTimeMillis()));
+        userDao.insert(user);
+        String token = UUIDUtil.uuid();
+        // 1.添加cookie并存储token到redis
+        addCookie(response, token, user);
+        // 2.添加userId - user到redis中, 维护在线列表
+        redisService.set(UserKey.getById, user.getSno(), user);
+    }
 
     /**
      * 登录
@@ -60,7 +79,10 @@ public class UserApiImpl implements UserApi {
         }
 
         String token = UUIDUtil.uuid();
+        // 1.添加cookie并存储token到redis
         addCookie(response, token, user);
+        // 2.添加userId - user到redis中, 维护在线列表
+        redisService.set(UserKey.getById, sno, user);
         return true;
     }
 
@@ -72,9 +94,15 @@ public class UserApiImpl implements UserApi {
      */
     @Override
     public User getById(String sno) {
-
+        // 1.从redis中获取
+        User user = redisService.get(UserKey.getById, sno, User.class);
+        if (user == null){
+            user = userDao.getById(sno);
+        }
+        // 刷新redis存储时长
+        redisService.set(UserKey.getById, sno, user);
         // TODO: 19-4-29 考虑是否存储到redis
-        return userDao.getById(sno);
+        return user;
     }
 
     /**
@@ -115,6 +143,7 @@ public class UserApiImpl implements UserApi {
         userDao.update(user);
         // 3.更新缓存
         redisService.set(UserKey.token, token, user);
+        redisService.set(UserKey.getById, user.getSno(), user);
         return user;
     }
 

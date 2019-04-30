@@ -7,6 +7,8 @@
         <module>ljdate-user-api</module>
         <module>ljdate-user</module>
         <module>ljdate-web</module>
+        <module>ljdate-post</module>
+        <module>ljdate-post-api</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -80,6 +82,12 @@
                 <groupId>com.alibaba.boot</groupId>
                 <artifactId>dubbo-spring-boot-starter</artifactId>
                 <version>${dubbo.starter.version}</version>
+            </dependency>
+
+            <!--solr组件-->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-solr</artifactId>
             </dependency>
 
             <dependency>

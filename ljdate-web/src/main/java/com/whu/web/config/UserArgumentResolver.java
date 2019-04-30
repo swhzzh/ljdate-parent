@@ -38,7 +38,13 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
             return null;
         }
         String token = StringUtils.isEmpty(paramToken)?cookieToken:paramToken;
-        return redisService.get(UserKey.token, token, User.class);
+        User user = redisService.get(UserKey.token, token, User.class);
+        if (user != null){
+            // 刷新redis内存
+            redisService.set(UserKey.getById, user.getSno(), user);
+            redisService.set(UserKey.token, token, user);
+        }
+        return user;
     }
 
     private String getCookieValue(HttpServletRequest request, String cookiName) {
