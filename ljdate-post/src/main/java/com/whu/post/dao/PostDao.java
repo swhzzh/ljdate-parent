@@ -15,24 +15,24 @@ import java.util.List;
 public interface PostDao {
 
     @Insert("insert into post(post_id, title, address, content, poster, category, tag, max_num, cur_num," +
-            " images, create_time) values(#{postId, title, address, content, poster, category, tag," +
-            "max_num, cur_num, images, create_time})")
+            " create_time) values(#{postId}, #{title}, #{address}, #{content}, #{poster}, #{category}, #{tag}," +
+            "#{maxNum}, #{curNum},#{createTime})")
     void insert(Post post);
 
 
     @Select("select p.post_id, p.title, p.address, p.content, p.poster, p.category, p.tag, p.max_num, p.cur_num, p.images, p.create_time, " +
-            "u.username, u.avatar" +
+            "u.username, u.avatar " +
             "from post p join user u on p.poster=u.sno ")
     List<PostVO> listVO();
 
     @Select("select p.post_id, p.title, p.address, p.content, p.poster, p.category, p.tag, p.max_num, p.cur_num, p.images, p.create_time, " +
-            "u.username, u.avatar" +
+            "u.username, u.avatar " +
             "from post p join user u on p.poster=u.sno where p.post_id=#{postId}")
     PostVO getVOById(String postId);
 
 
     @Select("select p.post_id, p.title, p.address, p.content, p.poster, p.category, p.tag, p.max_num, p.cur_num, p.images, p.create_time, " +
-            "u.username, u.avatar" +
+            "u.username, u.avatar " +
             "from post p join user u on p.poster=u.sno where p.poster=#{userId}")
     List<PostVO> getVOByUserId(String userId);
 
@@ -59,9 +59,12 @@ public interface PostDao {
     void deleteById(String postId);
 
     @Delete("delete from post where poster = #{userId}")
-    void  clear(String userId);
+    void clear(String userId);
 
-    @Select("select u.sno, u,username, u.phone_no, u.email, u.avatar, u.credit" +
+    @Delete("delete from post where poster = #{userId} and status = #{status}")
+    void clearByStatus(String userId, Integer status);
+
+    @Select("select u.sno, u.username, u.phone_no, u.email, u.avatar, u.credit " +
             "from post_member p join user u on p.member_id = u.sno " +
             "where p.post_id = #{postId}")
     List<User> listMember(String postId);

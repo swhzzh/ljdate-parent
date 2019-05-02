@@ -9,6 +9,8 @@ import com.whu.common.entity.Application;
 import com.whu.common.entity.Notification;
 import com.whu.common.entity.Post;
 import com.whu.common.entity.UserVisitAction;
+import com.whu.common.exception.GlobalException;
+import com.whu.common.result.CodeMsg;
 import com.whu.common.util.UUIDUtil;
 import com.whu.post.api.ApplicationApi;
 import com.whu.post.api.NotificationApi;
@@ -22,7 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @org.springframework.stereotype.Service
@@ -43,12 +47,16 @@ public class ApplicationApiImpl implements ApplicationApi {
     /**
      * 创建Application
      *
-     * @param reqParam
+     * @param application
      */
     @Override
-    public void create(JSONObject reqParam) {
+    public Map<String, Object> create(Application application) {
+        Application app = applicationDao.getByPostIdAndApplicant(application.getPostId(), application.getApplicant());
+        if (app != null){
+            throw new GlobalException(CodeMsg.APPLICATION_DUPLICATE);
+        }
+
         // 1.存入数据库
-        Application application = JSON.toJavaObject(reqParam, Application.class);
         application.setApplicationId(UUIDUtil.uuid());
         application.setCreateTime(new Timestamp(System.currentTimeMillis()));
         applicationDao.insert(application);
@@ -63,6 +71,9 @@ public class ApplicationApiImpl implements ApplicationApi {
 
         // 3.发送消息
         Post post = postDao.getById(application.getPostId());
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("application", application);
         if (post != null){
             Notification notification = new Notification();
             notification.setNotificationId(UUIDUtil.uuid());
@@ -72,7 +83,10 @@ public class ApplicationApiImpl implements ApplicationApi {
             notification.setContent("有人向您的帖子发送了申请");
             notification.setCreateTime(new Timestamp(System.currentTimeMillis()));
             notificationApi.sendNotification(notification);
+            map.put("notification", notification);
         }
+
+        return map;
     }
 
     /**
@@ -82,7 +96,7 @@ public class ApplicationApiImpl implements ApplicationApi {
      * @param status
      */
     @Override
-    public void handleApplication(String applicationId, String postId, String poster, Integer status) {
+    public Notification handleApplication(String applicationId, String postId, String poster, Integer status) {
         // 1.插入数据库
         applicationDao.changeStatus(applicationId, status, new Date());
         String message = null;
@@ -107,6 +121,8 @@ public class ApplicationApiImpl implements ApplicationApi {
         notification.setContent(message);
         notification.setCreateTime(new Timestamp(System.currentTimeMillis()));
         notificationApi.sendNotification(notification);
+
+        return notification;
     }
 
     /**
@@ -177,7 +193,13 @@ public class ApplicationApiImpl implements ApplicationApi {
      * @param applicant
      */
     @Override
-    public void clear(String applicant) {
-        applicationDao.deleteByApplicant(applicant);
+    public void clear(String applicant, Integer status) {
+        if (status == -1){
+            applicationDao.deleteByApplicant(applicant);
+        }
+        else {
+            applicationDao.deleteByApplicantAndStatus(applicant, status);
+        }
+
     }
 }

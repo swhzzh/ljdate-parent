@@ -14,8 +14,22 @@ import com.whu.post.api.ApplicationApi;
 import com.whu.post.api.PostApi;
 import com.whu.post.dao.PostDao;
 import com.whu.post.dao.PostMemberDao;
+import com.whu.post.dao.PostVORepository;
 import com.whu.post.rabbitmq.MQSender;
+import javafx.geometry.Pos;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MultiMatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
@@ -41,13 +55,16 @@ public class PostApiImpl implements PostApi {
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private PostVORepository postVORepository;
+
     /**
      * 创建Post
      *
      * @param post
      */
     @Override
-    public void create(Post post) {
+    public Post create(Post post) {
         // 1.插入数据库
         String postId = UUIDUtil.uuid();
         post.setPostId(postId);
@@ -55,10 +72,13 @@ public class PostApiImpl implements PostApi {
         postDao.insert(post);
 
         // 2.放入缓存
-        redisService.set(PostKey.getById, postId, postDao.getById(postId));
+        PostVO postVO = postDao.getVOById(postId);
+        redisService.set(PostKey.getById, postId, postVO);
 
         // 3.加入索引库
-        // TODO: 19-4-30
+        postVORepository.save(postVO);
+
+        return post;
     }
 
     /**
@@ -72,14 +92,24 @@ public class PostApiImpl implements PostApi {
         // 1.查缓存
         PostVO postVO = redisService.get(PostKey.getById, postId, PostVO.class);
         if (postVO != null){
-            redisService.set(PostKey.getById, postId, PostVO.class);
+            redisService.set(PostKey.getById, postId, postVO);
             return postVO;
         }
-        // 2.查数据库并写入缓存
-        PostVO post = postDao.getVOById(postId);
-        redisService.set(PostKey.getById, postId, post);
+        // 2.查索引库
+        List<PostVO> postVOS = postVORepository.findAllByPostId(postId);
+        if (postVOS != null && !postVOS.isEmpty()){
+            postVO = postVOS.get(0);
+        }
+        else {
+            // 3.查数据库写入索引库
+            postVO = postDao.getVOById(postId);
+            postVORepository.save(postVO);
+        }
 
-        // 3.记录日志
+        // 4.写入缓存
+        redisService.set(PostKey.getById, postId, postVO);
+
+        // 5.记录日志
         if (userId != null){
             UserVisitAction userVisitAction = new UserVisitAction();
             userVisitAction.setActionId(UUIDUtil.uuid());
@@ -89,7 +119,7 @@ public class PostApiImpl implements PostApi {
             mqSender.sendUserVisitActionMsg(userVisitAction);
         }
 
-        return post;
+        return postVO;
     }
 
     /**
@@ -108,7 +138,10 @@ public class PostApiImpl implements PostApi {
         // 2.更新缓存
         redisService.delete(PostKey.getById, postId);
 
-        // TODO: 19-4-30 更新solr 
+        // 3.更新索引库
+        PostVO postVO = postDao.getVOById(postId);
+        postVORepository.deleteByPostId(postId);
+        postVORepository.save(postVO);
         return post;
     }
 
@@ -121,7 +154,23 @@ public class PostApiImpl implements PostApi {
     public void remove(String postId) {
         postDao.deleteById(postId);
         redisService.delete(PostKey.getById, postId);
-        // TODO: 19-4-30 删除solr 
+        postVORepository.deleteByPostId(postId);
+    }
+
+    /**
+     * 清空 0-正常 1-已满 2-已关闭
+     *
+     * @param userId
+     * @param status
+     */
+    @Override
+    public void clear(String userId, Integer status) {
+        if (status == -1){
+            postDao.clear(userId);
+        }
+        else {
+            postDao.clearByStatus(userId, status);
+        }
     }
 
     /**
@@ -132,11 +181,24 @@ public class PostApiImpl implements PostApi {
      */
     @Override
     public PageInfo<PostVO> listByUserId(String userId, Integer pageNum, Integer pageSize) {
-        PageHelper.startPage(pageNum, pageSize);
-        List<PostVO> posts = postDao.getVOByUserId(userId);
-        PageInfo<PostVO> pageInfo = new PageInfo<>(posts);
-        pageInfo.setPageNum(pageNum);
-        pageInfo.setPageSize(pageSize);
+        // 1.搜索索引库
+        Page<PostVO> postVOPage = postVORepository.findAllByPosterOrderByCreateTimeDesc(userId, PageRequest.of(pageNum, pageSize));
+        PageInfo<PostVO> pageInfo = null;
+        if (!postVOPage.isEmpty()){
+            pageInfo = new PageInfo<>(postVOPage.getContent());
+            pageInfo.setPageSize(pageSize);
+            pageInfo.setPageNum(pageNum);
+            pageInfo.setPages(postVOPage.getTotalPages());
+        }
+        // 2.搜索数据库
+        else {
+            PageHelper.startPage(pageNum, pageSize);
+            List<PostVO> posts = postDao.getVOByUserId(userId);
+            pageInfo = new PageInfo<>(posts);
+            pageInfo.setPageNum(pageNum);
+            pageInfo.setPageSize(pageSize);
+        }
+
         return pageInfo;
     }
 
@@ -149,16 +211,29 @@ public class PostApiImpl implements PostApi {
      */
     @Override
     public PageInfo<PostVO> listByPage(Integer pageNum, Integer pageSize) {
-        PageHelper.startPage(pageNum, pageSize);
-        List<PostVO> posts = postDao.listVO();
-        PageInfo<PostVO> pageInfo = new PageInfo<>(posts);
-        pageInfo.setPageNum(pageNum);
-        pageInfo.setPageSize(pageSize);
+        // 1.搜索索引库
+        Page<PostVO> postVOPage = postVORepository.findAll(PageRequest.of(pageNum, pageSize, Sort.Direction.DESC, "createTime" ));
+        PageInfo<PostVO> pageInfo = null;
+        if (!postVOPage.isEmpty()){
+            pageInfo = new PageInfo<>(postVOPage.getContent());
+            pageInfo.setPageSize(pageSize);
+            pageInfo.setPageNum(pageNum);
+            pageInfo.setPages(postVOPage.getTotalPages());
+        }
+        // 2.搜索数据库
+        else {
+            PageHelper.startPage(pageNum, pageSize);
+            List<PostVO> posts = postDao.listVO();
+            pageInfo = new PageInfo<>(posts);
+            pageInfo.setPageNum(pageNum);
+            pageInfo.setPageSize(pageSize);
+        }
+
         return pageInfo;
     }
 
     /**
-     * 搜索 solr
+     * 搜索 elasticSearch
      *
      * @param keyword
      * @param pageNum
@@ -166,8 +241,33 @@ public class PostApiImpl implements PostApi {
      * @return
      */
     @Override
-    public List<PostVO> search(String keyword, Integer pageNum, Integer pageSize, String userId) {
-        // TODO: 19-4-30 solr
+    public PageInfo<PostVO> search(String keyword, Integer pageNum, Integer pageSize, String userId) {
+        // 查询索引库
+//        BoolQueryBuilder builder = QueryBuilders.boolQuery();
+//        builder.should(QueryBuilders.fuzzyQuery("title", keyword));
+//        builder.should(QueryBuilders.fuzzyQuery("content", keyword));
+//        builder.should(QueryBuilders.fuzzyQuery("address", keyword));
+//        builder.should(QueryBuilders.fuzzyQuery("category", keyword));
+//        builder.should(QueryBuilders.fuzzyQuery("tag", keyword));
+//        builder.should(QueryBuilders.fuzzyQuery("username", keyword));
+
+        String[] fields = {"title", "content", "address", "category", "tag", "username"};
+        MultiMatchQueryBuilder builder = new MultiMatchQueryBuilder(keyword, fields).minimumShouldMatch("25%");
+        Page<PostVO> page = postVORepository.search(builder, PageRequest.of(pageNum, pageSize));
+        //FieldSortBuilder sortBuilder = SortBuilders.fieldSort("createTime").order(SortOrder.DESC);
+//        PageRequest pageRequest =
+//        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
+//        nativeSearchQueryBuilder.withQuery(builder);
+//        //nativeSearchQueryBuilder.withSort(sortBuilder);
+//        nativeSearchQueryBuilder.withPageable(pageRequest);
+//        NativeSearchQuery query = nativeSearchQueryBuilder.build();
+
+
+        PageInfo<PostVO> pageInfo = new PageInfo<>(page.getContent());
+        pageInfo.setPageSize(pageSize);
+        pageInfo.setPageNum(pageNum);
+        pageInfo.setPages(page.getTotalPages());
+
         // 记录日志
         if (userId != null){
             UserVisitAction userVisitAction = new UserVisitAction();
@@ -177,21 +277,27 @@ public class PostApiImpl implements PostApi {
             userVisitAction.setCreateTime(new Timestamp(System.currentTimeMillis()));
             mqSender.sendUserVisitActionMsg(userVisitAction);
         }
-        return null;
+        return pageInfo;
     }
 
     /**
      * 增加成员
      *
-     * @param postId
+     * @param applicationId
      * @param status
      */
     @Override
     @Transactional
-    public void handleApplication(String postId, String applicationId, Integer status) {
+    public Notification handleApplication(String applicationId, Integer status) {
+        Application application = applicationApi.getById(applicationId);
+        String postId = application.getPostId();
+        Notification notification;
+        if (postId == null){
+            return null;
+        }
         Post post = postDao.getById(postId);
         if (status == 2){
-            applicationApi.handleApplication(applicationId, postId, post.getPoster(), status);
+            notification =  applicationApi.handleApplication(applicationId, postId, post.getPoster(), status);
         }
 
         else {
@@ -204,20 +310,25 @@ public class PostApiImpl implements PostApi {
                 if (post.getCurNum() + 1 == post.getMaxNum()){
                     postDao.changeStatus(postId, 1, new Date());
                 }
+                PostVO postVO = getVOById(postId, null);
+                postVO.setCurNum(post.getCurNum() + 1);
+                redisService.set(PostKey.getById, postId, postVO);
+                postVORepository.save(postVO);
                 // 2.插入PostMember
                 PostMember pm = new PostMember();
                 pm.setPostId(postId);
-                Application application = applicationApi.getById(applicationId);
+
                 pm.setMemberId(application.getApplicant());
                 pm.setCreateTime(new Timestamp(System.currentTimeMillis()));
                 postMemberDao.insert(pm);
                 // 3.更改application状态
-                applicationApi.handleApplication(applicationId, postId, post.getPoster(), 1);
+                notification = applicationApi.handleApplication(applicationId, postId, post.getPoster(), 1);
             }
             else {
-                applicationApi.handleApplication(applicationId, postId, post.getPoster(),3);
+                notification = applicationApi.handleApplication(applicationId, postId, post.getPoster(),3);
             }
         }
+        return notification;
     }
 
     /**

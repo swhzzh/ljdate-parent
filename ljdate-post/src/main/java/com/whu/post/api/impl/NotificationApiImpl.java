@@ -37,11 +37,11 @@ public class NotificationApiImpl implements NotificationApi {
      */
     @Override
     public void sendNotification(Notification notification) {
-        // 1.用户在线
+        /*// 1.用户在线
         if (redisService.exists(UserKey.getById, notification.getReceiver())) {
             // 发送通知
-            messagingTemplate.convertAndSendToUser(notification.getReceiver(), "/queue/notify", notification.getContent());
-        }
+            messagingTemplate.convertAndSendToUser(notification.getReceiver(), "/queue/notify", notification);
+        }*/
         // 2.发送消息存储到数据库
         mqSender.sendNotifyMsg(notification);
     }

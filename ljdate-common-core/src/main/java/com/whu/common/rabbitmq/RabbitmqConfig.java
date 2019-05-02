@@ -86,9 +86,9 @@ public class RabbitmqConfig {
         factoryConfigurer.configure(factory,connectionFactory);
         //factory.setMessageConverter(new Jackson2JsonMessageConverter());
         factory.setAcknowledgeMode(AcknowledgeMode.NONE);
-        factory.setConcurrentConsumers(env.getProperty("spring.rabbitmq.listener.concurrency",int.class));
-        factory.setMaxConcurrentConsumers(env.getProperty("spring.rabbitmq.listener.max-concurrency",int.class));
-        factory.setPrefetchCount(env.getProperty("spring.rabbitmq.listener.prefetch",int.class));
+        factory.setConcurrentConsumers(10);
+        factory.setMaxConcurrentConsumers(20);
+        factory.setPrefetchCount(5);
         return factory;
     }
 

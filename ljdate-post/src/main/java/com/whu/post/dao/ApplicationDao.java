@@ -12,11 +12,11 @@ import java.util.List;
 public interface ApplicationDao {
 
     @Insert("insert into application(application_id, applicant, post_id, phone_no, wechat_no, qq_no, " +
-            "email, content, create_time) values (#{applicationId, applicant, postId, phoneNo, wecharNo, qqNo, " +
-            "email, content, createTime})")
+            "email, content, create_time) values (#{applicationId}, #{applicant}, #{postId}, #{phoneNo}, #{wechatNo}, #{qqNo}, " +
+            "#{email}, #{content}, #{createTime})")
     void insert(Application application);
 
-    @Update("update application set status = #{status}, update_time = #{updateTime} where application_id = #{application_id}")
+    @Update("update application set status = #{status}, update_time = #{updateTime} where application_id = #{applicationId}")
     void changeStatus(String applicationId, Integer status, Date updateTime);
 
     @Select("select * from application where applicant = #{userId}")
@@ -28,6 +28,9 @@ public interface ApplicationDao {
     @Select("select * from application where post_id = #{postId}")
     List<Application> listByPostId(String postId);
 
+    @Select("select * from application where post_id = #{postId} and applicant = #{applicant}")
+    Application getByPostIdAndApplicant(String postId, String applicant);
+
     @Select("select * from application where application_id = #{applicationId}")
     Application getById(String applicationId);
 
@@ -36,4 +39,7 @@ public interface ApplicationDao {
 
     @Delete("delete from application where applicant = #{applicant}")
     void deleteByApplicant(String applicant);
+
+    @Delete("delete from application where applicant = #{applicant} and status = #{status}")
+    void deleteByApplicantAndStatus(String applicant, Integer status);
 }

@@ -36,7 +36,7 @@ public interface NotificationApi {
      * @param userId
      * @param status 0-未读, 1-已读
      * @param pageNum
-     * @param pageSizew
+     * @param pageSize
      * @return
      */
     PageInfo<Notification> listByPageAndUserIdAndStatus(String userId, Integer status, Integer pageNum, Integer pageSize);

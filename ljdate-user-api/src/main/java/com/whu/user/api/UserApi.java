@@ -16,17 +16,16 @@ public interface UserApi {
      *
      * @param reqParam 请求参数
      */
-    void register(HttpServletResponse response, JSONObject reqParam);
+    String register(JSONObject reqParam);
 
     /**
      * 登录
      *
-     * @param response
      * @param sno 学号
      * @param password 密码
      * @return
      */
-    boolean login(HttpServletResponse response, String sno, String password);
+    String login(String sno, String password);
 
     /**
      * 通过id获取User
@@ -49,18 +48,18 @@ public interface UserApi {
     /**
      * 更新用户信息
      *
-     * @param request
+     * @param token
      * @param oldUser redis中获取的user
      * @param reqParam 请求参数(结构必须同User)
      * @return
      */
-    User update(HttpServletRequest request, User oldUser, JSONObject reqParam);
+    User update(String token, User oldUser, JSONObject reqParam);
 
     /**
      * 上传头像
      *
-     * @param file 头像图片文件
+     * @param avatar 头像图片文件字节数组
      * @return
      */
-    String uploadAvatar(MultipartFile file);
+    String uploadAvatar(byte[] avatar, String extName, String token, User user);
 }

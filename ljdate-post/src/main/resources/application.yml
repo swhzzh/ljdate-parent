@@ -1,7 +1,7 @@
 # spring
 spring:
   application:
-    name: ljdate-user
+    name: ljdate-post
   datasource:
     # local
     url: jdbc:mysql://localhost:3307/datedb?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false
@@ -22,18 +22,37 @@ spring:
     testOnReturn: false
     poolPreparedStatements: true
     maxOpenPreparedStatements: 20
+  data:
+    elasticsearch:
+      cluster-nodes: localhost:9301
+      cluster-name: docker-cluster
+  rabbitmq:
+    host: localhost
+    port: 5673
+    username: guest
+    password: guest
+    listener:
+      simple:
+        concurrency: 10
+        max-concurrency: 20
+        prefetch: 5
+      concurrency: 10
+      max-concurrency: 20
+      prefetch: 5
 
 server:
-  port: 8081
+  port: 8082
 
 
 # dubbo
 dubbo:
   application:
-    name: ljdate-user
+    name: ljdate-post
+    qos-enable: true
+    qos-port: 22223
   protocol:
     name: dubbo
-    port: 20880
+    port: 20881
   registry:
     # docker
     address: zookeeper://localhost:2181
@@ -60,9 +79,3 @@ pagehelper:
   reasonable: true
   supportMethodsArguments: true
   params: count=countSql
-
-# fastdfs
-img:
-  server:
-    url:
-      http://localhost:8080/

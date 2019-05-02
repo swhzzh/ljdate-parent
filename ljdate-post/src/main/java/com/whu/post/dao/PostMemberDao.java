@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public interface PostMemberDao {
 
     @Insert("insert into post_member(post_id, member_id, create_time) " +
-            "values(#{postId}, #{memberId}, #{createTime}")
+            "values(#{postId}, #{memberId}, #{createTime})")
     void insert(PostMember postMember);
 
     @Delete("delete from post_member where post_id = #{postId} and member_id = #{memberId}")

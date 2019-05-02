@@ -22,6 +22,6 @@ public class RedisPoolFactory {
         /*return new JedisPool(poolConfig, redisConfig.getHost(), redisConfig.getPort(),
                 redisConfig.getTimeout()*1000, redisConfig.getPassword(),0);*/
         return new JedisPool(poolConfig, redisConfig.getHost(), redisConfig.getPort(),
-                redisConfig.getTimeout() * 1000, "", 0);
+                redisConfig.getTimeout() * 1000);
     }
 }

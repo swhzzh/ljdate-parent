@@ -1,7 +1,7 @@
 # spring
 spring:
   application:
-    name: ljdate-user
+    name: ljdate-web
   datasource:
     # local
     url: jdbc:mysql://localhost:3307/datedb?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false
@@ -23,46 +23,14 @@ spring:
     poolPreparedStatements: true
     maxOpenPreparedStatements: 20
 
+#tomcat conf
 server:
-  port: 8081
-
-
-# dubbo
+  port: 8083
+#dubbo conf
 dubbo:
   application:
-    name: ljdate-user
-  protocol:
-    name: dubbo
-    port: 20880
+    name: ljdate-web
+    qos-port: 22224
+    qos-enable: true
   registry:
-    # docker
     address: zookeeper://localhost:2181
-  provider:
-    timeout: 1000
-
-# version
-demo:
-  api:
-    version: 1.0.0
-
-
-# mybatis
-mybatis:
-  type-aliases-package: com.whu.common.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    default-fetch-size: 100
-    default-statement-timeout: 3000
-
-# pageHelper
-pagehelper:
-  helperDialect: mysql
-  reasonable: true
-  supportMethodsArguments: true
-  params: count=countSql
-
-# fastdfs
-img:
-  server:
-    url:
-      http://localhost:8080/
