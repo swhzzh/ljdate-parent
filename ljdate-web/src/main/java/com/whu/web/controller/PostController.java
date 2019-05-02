@@ -18,8 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/post")
@@ -52,6 +56,41 @@ public class PostController {
         return Result.success(postApi.create(post));
     }
 
+    /**
+     * 上传Post图片
+     *
+     * @param postId
+     * @param image1
+     * @param image2
+     * @param image3
+     * @return
+     * @throws IOException
+     */
+    @PostMapping("/uploadImages")
+    public Result<Post> uploadImages(@RequestParam("postId") String postId, @RequestParam(value = "image1", required = false)MultipartFile image1, @RequestParam(value = "image2", required = false)MultipartFile image2,@RequestParam(value = "image3", required = false)MultipartFile image3) throws IOException {
+        Map<String, byte[]> images = new HashMap<>();
+        //1、取文件的扩展名
+        if (image1 != null){
+            String originalFilename = image1.getOriginalFilename();
+            String extName = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+            images.put(extName, image1.getBytes());
+        }
+        if (image2 != null){
+            String originalFilename = image2.getOriginalFilename();
+            String extName = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+            images.put(extName, image2.getBytes());
+        }
+        if (image3 != null){
+            String originalFilename = image3.getOriginalFilename();
+            String extName = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+            images.put(extName, image3.getBytes());
+        }
+        Post post = postApi.uploadImages(postId, images);
+        if (post == null){
+            return Result.error(CodeMsg.SERVER_ERROR);
+        }
+        return Result.success(post);
+    }
 
     /**
      * 查看Post详细信息

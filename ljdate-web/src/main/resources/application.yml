@@ -4,7 +4,7 @@ spring:
     name: ljdate-web
   datasource:
     # local
-    url: jdbc:mysql://localhost:3307/datedb?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false
+    url: jdbc:mysql://120.79.74.63:3307/datedb?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false
     username: root
     password: 1234
     driver-class-name: com.mysql.jdbc.Driver
@@ -33,4 +33,6 @@ dubbo:
     qos-port: 22224
     qos-enable: true
   registry:
-    address: zookeeper://localhost:2181
+    address: zookeeper://120.79.74.63:2182 #localhost 2181
+  consumer:
+    timeout: 3000

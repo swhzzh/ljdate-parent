@@ -7,6 +7,8 @@ import com.github.pagehelper.PageInfo;
 import com.whu.common.entity.*;
 import com.whu.common.redis.PostKey;
 import com.whu.common.redis.RedisService;
+import com.whu.common.redis.UserKey;
+import com.whu.common.util.FastDFSClient;
 import com.whu.common.util.UUIDUtil;
 import com.whu.common.util.UpdateUtil;
 import com.whu.common.vo.PostVO;
@@ -25,6 +27,7 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -35,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @org.springframework.stereotype.Service
@@ -58,6 +62,9 @@ public class PostApiImpl implements PostApi {
     @Autowired
     private PostVORepository postVORepository;
 
+    @Value("${img.server.url}")
+    private String IMG_SERVER_URL;
+
     /**
      * 创建Post
      *
@@ -79,6 +86,48 @@ public class PostApiImpl implements PostApi {
         postVORepository.save(postVO);
 
         return post;
+    }
+
+    /**
+     * 为post上传图片
+     *
+     * @param postId
+     * @return
+     */
+    @Override
+    @Transactional
+    public Post uploadImages(String postId, Map<String, byte[]> images) {
+        try {
+            Post post = postDao.getById(postId);
+            if (post == null){
+                return null;
+            }
+            //2、创建一个FastDFS的客户端
+            FastDFSClient fastDFSClient = new FastDFSClient("classpath:conf/fastdfs-client.conf");
+
+            String imageUrls = "";
+            for (Map.Entry<String, byte[]> entry : images.entrySet()) {
+                String extName = entry.getKey();
+                byte[] image = entry.getValue();
+                //3、执行上传处理
+                String path = fastDFSClient.uploadFile(image, extName);
+                //4、拼接返回的url和ip地址，拼装成完整的url
+                String url = IMG_SERVER_URL + path;
+                imageUrls += url + ",";
+            }
+            post.setImages(imageUrls);
+            postDao.update(post);
+
+            // 5.更新Post
+            PostVO postVO = postDao.getVOById(postId);
+            redisService.set(PostKey.getById, postId, postVO);
+            postVORepository.save(postVO);
+
+            return post;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**

@@ -1,6 +1,6 @@
 redis:
-  host: localhost
-  port: 6383
+  host: 120.79.74.63 #localhost
+  port: 6380 #6383
   timeout: 10
   password: 123456
   poolMaxTotal: 1000
@@ -8,7 +8,7 @@ redis:
   poolMaxWait: 500
 spring:
   rabbitmq:
-    host: localhost
+    host: 120.79.74.63 #localhost
     port: 5673
     username: guest
     password: guest

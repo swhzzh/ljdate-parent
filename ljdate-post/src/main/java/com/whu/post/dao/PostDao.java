@@ -42,7 +42,7 @@ public interface PostDao {
     @Select("select * from post where poster = #{userId}")
     List<Post> getByUserId(String userId);
 
-    @Update("update post set title = #{title}, content = #{content}, address = #{address}, tag = #{tag}, update_time=#{updateTime} " +
+    @Update("update post set title = #{title}, content = #{content}, address = #{address}, tag = #{tag}, images = #{images}, update_time=#{updateTime} " +
             "where post_id = #{postId}")
     void update(Post post);
 

@@ -15,7 +15,7 @@ public interface UserDao {
     void insert(User user);
 
     @Update("update user set username = #{username}, password = #{password}, phone_no = #{phoneNo}," +
-            "email = #{email}, update_time = #{updateTime} where sno = #{sno}")
+            "email = #{email}, avatar = #{avatar}, update_time = #{updateTime} where sno = #{sno}")
     void update(User user);
 
     @Delete("delete from user where sno = #{sno}")

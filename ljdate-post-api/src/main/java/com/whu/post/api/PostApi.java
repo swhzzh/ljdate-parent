@@ -8,6 +8,7 @@ import com.whu.common.vo.PostVO;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Map;
 
 public interface PostApi {
 
@@ -17,6 +18,13 @@ public interface PostApi {
      * @param post
      */
     Post create(Post post);
+
+    /**
+     * 为post上传图片
+     *
+     * @return
+     */
+    Post uploadImages(String postId, Map<String, byte[]> images);
 
 
     /**
