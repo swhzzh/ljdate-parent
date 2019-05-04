@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -244,6 +245,51 @@ public class PostController {
     }
 
     /**
+     * 通过category, area, startTime筛选post
+     *
+     * @param request
+     * @return
+     */
+    @GetMapping("/filter")
+    public Result<PageInfo<PostVO>> filter(HttpServletRequest request){
+        // TODO: 19-5-4 加入日志
+        String _category = request.getParameter("category");
+        if (_category == null){
+            _category = "-1";
+        }
+        Integer category = Integer.valueOf(_category);
+
+        String _area = request.getParameter("area");
+        if (_area == null){
+            _area = "-1";
+        }
+        Integer area = Integer.valueOf(_area);
+
+        String time = request.getParameter("startTime");
+        Timestamp startTime;
+        if (time == null){
+            startTime = null;
+        }
+        else {
+            // yyyy-hh-mm hh:mm:ss
+            startTime = Timestamp.valueOf(time);
+        }
+
+        String _pageNum = request.getParameter("pageNum");
+        if (_pageNum == null){
+            _pageNum = "1";
+        }
+        Integer pageNum = Integer.valueOf(_pageNum);
+        String _pageSize = request.getParameter("pageSize");
+        if (_pageSize == null){
+            _pageSize = "10";
+        }
+        Integer pageSize = Integer.valueOf(_pageSize);
+        PageInfo<PostVO> pageInfo = postApi.listByCategoryAndAreaAndStartTime(category, area, startTime, pageNum, pageSize);
+        return Result.success(pageInfo);
+    }
+
+    /**
      * 更新申请状态
      *
      * @param reqParam
@@ -293,5 +339,16 @@ public class PostController {
         }
         Integer pageSize = Integer.valueOf(_pageSize);
         return Result.success(postApi.listMember(postId, pageNum, pageSize));
+    }
+
+    /**
+     * 同步数据库和索引库
+     *
+     * @return
+     */
+    @GetMapping("/synchronizeDBAndIndexDB")
+    public Result<String> synchronize(){
+        postApi.synchronizeDBAndIndexDB();
+        return Result.success("ok");
     }
 }

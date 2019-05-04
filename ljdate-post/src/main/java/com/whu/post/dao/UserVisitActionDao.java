@@ -12,8 +12,8 @@ import java.util.List;
 @Repository
 public interface UserVisitActionDao {
 
-    @Insert("insert into user_visit_action(action_id, user_id, create_time, search_keyword, " +
-            "click_post_id, apply_post_id) values (#{actionId}, #{userId}, #{createTime}, #{searchKeyword}, " +
+    @Insert("insert into user_visit_action(action_id, snowflake_id, user_id, create_time, search_keyword, " +
+            "click_post_id, apply_post_id) values (#{actionId}, #{snowflakeId}, #{userId}, #{createTime}, #{searchKeyword}, " +
             "#{clickPostId}, #{applyPostId})")
     void insert(UserVisitAction uva);
 

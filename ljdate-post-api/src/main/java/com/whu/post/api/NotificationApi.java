@@ -56,4 +56,20 @@ public interface NotificationApi {
      * @param status
      */
     void clearByStatus(String userId, Integer status);
+
+    /**
+     * 更新通知状态
+     *
+     * @param notificationId
+     * @param status
+     */
+    void changeStatus(String notificationId, Integer status);
+
+    /**
+     * 通过Id获取Notification
+     *
+     * @param notificationId
+     * @return
+     */
+    Notification getById(String notificationId);
 }

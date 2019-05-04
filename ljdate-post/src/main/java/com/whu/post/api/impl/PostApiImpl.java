@@ -9,6 +9,7 @@ import com.whu.common.redis.PostKey;
 import com.whu.common.redis.RedisService;
 import com.whu.common.redis.UserKey;
 import com.whu.common.util.FastDFSClient;
+import com.whu.common.util.SnowFlake;
 import com.whu.common.util.UUIDUtil;
 import com.whu.common.util.UpdateUtil;
 import com.whu.common.vo.PostVO;
@@ -30,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
@@ -65,6 +67,44 @@ public class PostApiImpl implements PostApi {
     @Value("${img.server.url}")
     private String IMG_SERVER_URL;
 
+
+    private String getCategoryStr(Integer category){
+        if (category == null){
+            return null;
+        }
+        switch (category){
+            case 0:
+                return "学习";
+            case 1:
+                return "娱乐";
+            case 2:
+                return "其他";
+                default:
+                    return "其他";
+        }
+    }
+
+    private String getAreaStr(Integer area){
+
+        if (area == null){
+            return null;
+        }
+        switch (area){
+            case 0:
+                return "文理学部";
+            case 1:
+                return "信息学部";
+            case 2:
+                return "工学部";
+            case 3:
+                return "医学部";
+            case 4:
+                return "校外";
+                default:
+                    return "校外";
+        }
+    }
+
     /**
      * 创建Post
      *
@@ -76,10 +116,18 @@ public class PostApiImpl implements PostApi {
         String postId = UUIDUtil.uuid();
         post.setPostId(postId);
         post.setCreateTime(new Timestamp(System.currentTimeMillis()));
+        Long snowflakeId = SnowFlake.nextId();
+        post.setSnowflakeId(snowflakeId);
+        post.setSnowflakeIdStr(String.valueOf(snowflakeId));
+        post.setCategoryStr(getCategoryStr(post.getCategory()));
+        post.setAreaStr(getAreaStr(post.getArea()));
         postDao.insert(post);
 
         // 2.放入缓存
         PostVO postVO = postDao.getVOById(postId);
+//        postVO.setAreaStr(getAreaStr(postVO.getArea()));
+//        postVO.setCategoryStr(getCategoryStr(postVO.getCategory()));
+
         redisService.set(PostKey.getById, postId, postVO);
 
         // 3.加入索引库
@@ -103,7 +151,9 @@ public class PostApiImpl implements PostApi {
                 return null;
             }
             //2、创建一个FastDFS的客户端
-            FastDFSClient fastDFSClient = new FastDFSClient("classpath:conf/fastdfs-client.conf");
+            // TODO: 19-5-4 存储到配置文件中
+            String trackerServers = "120.79.74.63:22122";
+            FastDFSClient fastDFSClient = new FastDFSClient(trackerServers);
 
             String imageUrls = "";
             for (Map.Entry<String, byte[]> entry : images.entrySet()) {
@@ -117,10 +167,11 @@ public class PostApiImpl implements PostApi {
             }
             post.setImages(imageUrls);
             postDao.update(post);
-
+            Thread.sleep(100);
             // 5.更新Post
             PostVO postVO = postDao.getVOById(postId);
             redisService.set(PostKey.getById, postId, postVO);
+            postVORepository.deleteByPostId(postId);
             postVORepository.save(postVO);
 
             return post;
@@ -163,6 +214,7 @@ public class PostApiImpl implements PostApi {
             UserVisitAction userVisitAction = new UserVisitAction();
             userVisitAction.setActionId(UUIDUtil.uuid());
             userVisitAction.setClickPostId(postId);
+            userVisitAction.setSnowflakeId(postVO.getSnowflakeId());
             userVisitAction.setUserId(userId);
             userVisitAction.setCreateTime(new Timestamp(System.currentTimeMillis()));
             mqSender.sendUserVisitActionMsg(userVisitAction);
@@ -181,12 +233,19 @@ public class PostApiImpl implements PostApi {
     public Post update(Post post) {
         String postId = post.getPostId();
         UpdateUtil.copyProperties(postDao.getById(postId), post);
+        post.setCategoryStr(getCategoryStr(post.getCategory()));
+        post.setAreaStr(getAreaStr(post.getArea()));
         post.setUpdateTime(new Timestamp(System.currentTimeMillis()));
         // 1.更新数据库
         postDao.update(post);
         // 2.更新缓存
         redisService.delete(PostKey.getById, postId);
 
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         // 3.更新索引库
         PostVO postVO = postDao.getVOById(postId);
         postVORepository.deleteByPostId(postId);
@@ -216,9 +275,12 @@ public class PostApiImpl implements PostApi {
     public void clear(String userId, Integer status) {
         if (status == -1){
             postDao.clear(userId);
+            postVORepository.deleteByPoster(userId);
+            // TODO: 19-5-4 同步redis
         }
         else {
             postDao.clearByStatus(userId, status);
+            postVORepository.deleteByPosterAndStatus(userId, status);
         }
     }
 
@@ -282,6 +344,118 @@ public class PostApiImpl implements PostApi {
     }
 
     /**
+     * 根据种类列举Post
+     *
+     * @param category
+     * @param area
+     * @param startTime
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
+    @Override
+    public PageInfo<PostVO> listByCategoryAndAreaAndStartTime(Integer category, Integer area, Timestamp startTime, Integer pageNum, Integer pageSize) {
+        PageInfo<PostVO> pageInfo = null;
+        Page<PostVO> page = null;
+        Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.Direction.DESC, "createTime");
+        Timestamp endTime = null;
+        if (startTime != null){
+            endTime = new Timestamp(startTime.getTime()+ 1000 * 60 * 60 * 24L) ;
+        }
+
+
+        // 全部类型
+        if (category == -1){
+            if (area == -1){
+                if (startTime == null){
+                    page = postVORepository.findAll(pageable);
+                }
+                else {
+                    page = postVORepository.findAllByStartTimeBetweenOrderByCreateTimeDesc(startTime,endTime, pageable);
+                }
+            }
+            else {
+                if (startTime == null){
+                    page = postVORepository.findAllByAreaOrderByCreateTimeDesc(area, pageable);
+                }
+                else {
+                    page = postVORepository.findAllByAreaAndStartTimeBetweenOrderByCreateTimeDesc(area, startTime, endTime, pageable);
+                }
+            }
+        }
+        else {
+            if (area == -1){
+                if (startTime == null){
+                    page = postVORepository.findAllByCategoryOrderByCreateTimeDesc(category, pageable);
+                }
+                else {
+                    page = postVORepository.findAllByCategoryAndStartTimeBetweenOrderByCreateTimeDesc(category, startTime,endTime, pageable);
+                }
+            }
+            else {
+                if (startTime == null){
+                    page = postVORepository.findAllByCategoryAndAreaOrderByCreateTimeDesc(category, area, pageable);
+                }
+                else {
+                    page = postVORepository.findAllByCategoryAndAreaAndStartTimeBetweenOrderByCreateTimeDesc(category, area, startTime, endTime, pageable);
+                }
+            }
+        }
+        if (!page.isEmpty()){
+            pageInfo = new PageInfo<>(page.getContent());
+            pageInfo.setPageSize(pageSize);
+            pageInfo.setPageNum(pageNum);
+            pageInfo.setPages(page.getTotalPages());
+        }
+        // 2.搜索数据库
+        else {
+            PageHelper.startPage(pageNum, pageSize);
+            List<PostVO> posts = postDao.listVO();
+            if (category == -1){
+                if (area == -1){
+                    if (startTime == null){
+                        posts = postDao.listVO();
+                    }
+                    else {
+                        posts = postDao.listVOByStartTimeBetween(startTime, endTime);
+                    }
+                }
+                else {
+                    if (startTime == null){
+                        posts = postDao.listVOByArea(area);
+                    }
+                    else {
+                        posts = postDao.listVOByAreaAndStartTimeBetween(area, startTime, endTime);
+                    }
+                }
+            }
+            else {
+                if (area == -1){
+                    if (startTime == null){
+                        posts = postDao.listVOByCategory(category);
+                    }
+                    else {
+                        posts = postDao.listVOByCategoryAndStartTimeBetween(category, startTime, endTime);
+                    }
+                }
+                else {
+                    if (startTime == null){
+                        posts = postDao.listVOByCategoryAndArea(category, area);
+                    }
+                    else {
+                        posts = postDao.listVOByCategoryAndAreaAndStartTimeBetween(category, area, startTime, endTime);
+                    }
+                }
+            }
+            pageInfo = new PageInfo<>(posts);
+            pageInfo.setPageNum(pageNum);
+            pageInfo.setPageSize(pageSize);
+        }
+
+        return pageInfo;
+    }
+
+    /**
      * 搜索 elasticSearch
      *
      * @param keyword
@@ -300,7 +474,7 @@ public class PostApiImpl implements PostApi {
 //        builder.should(QueryBuilders.fuzzyQuery("tag", keyword));
 //        builder.should(QueryBuilders.fuzzyQuery("username", keyword));
 
-        String[] fields = {"title", "content", "address", "category", "tag", "username"};
+        String[] fields = {"title", "content", "address","areaStr", "categoryStr", "tag", "username"};
         MultiMatchQueryBuilder builder = new MultiMatchQueryBuilder(keyword, fields).minimumShouldMatch("25%");
         Page<PostVO> page = postVORepository.search(builder, PageRequest.of(pageNum, pageSize));
         //FieldSortBuilder sortBuilder = SortBuilders.fieldSort("createTime").order(SortOrder.DESC);
@@ -362,6 +536,7 @@ public class PostApiImpl implements PostApi {
                 PostVO postVO = getVOById(postId, null);
                 postVO.setCurNum(post.getCurNum() + 1);
                 redisService.set(PostKey.getById, postId, postVO);
+                postVORepository.deleteByPostId(postId);
                 postVORepository.save(postVO);
                 // 2.插入PostMember
                 PostMember pm = new PostMember();
@@ -407,5 +582,15 @@ public class PostApiImpl implements PostApi {
     @Override
     public void changeStatus(String postId, Integer status) {
 
+    }
+
+    /**
+     * 同步数据库和索引库
+     */
+    @Override
+    public void synchronizeDBAndIndexDB() {
+        List<PostVO> postVOS = postDao.listVO();
+        postVORepository.deleteAll();
+        postVORepository.saveAll(postVOS);
     }
 }

@@ -10,8 +10,8 @@ import java.util.List;
 @Component
 public interface UserDao {
 
-    @Insert("insert into user(sno, username, password, phone_no, email, create_time) " +
-            "values(#{sno}, #{username}, #{password}, #{phoneNo}, #{email}, #{createTime})")
+    @Insert("insert into user(sno, snoLong, username, password, phone_no, email, create_time) " +
+            "values(#{sno}, #{snoLong}, #{username}, #{password}, #{phoneNo}, #{email}, #{createTime})")
     void insert(User user);
 
     @Update("update user set username = #{username}, password = #{password}, phone_no = #{phoneNo}," +

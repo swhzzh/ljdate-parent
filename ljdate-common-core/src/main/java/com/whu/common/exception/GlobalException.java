@@ -17,4 +17,7 @@ public class GlobalException extends RuntimeException{
         return cm;
     }
 
+    public void setCm(CodeMsg cm) {
+        this.cm = cm;
+    }
 }

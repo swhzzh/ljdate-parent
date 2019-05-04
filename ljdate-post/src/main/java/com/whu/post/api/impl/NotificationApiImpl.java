@@ -123,4 +123,34 @@ public class NotificationApiImpl implements NotificationApi {
             notificationDao.clearByStatus(userId, status);
         }
     }
+
+    /**
+     * 更新通知状态
+     *
+     * @param notificationId
+     * @param status
+     */
+    @Override
+    public void changeStatus(String notificationId, Integer status) {
+        notificationDao.updateByStatus(notificationId, status);
+    }
+
+    /**
+     * 通过Id获取Notification
+     *
+     * @param notificationId
+     * @return
+     */
+    @Override
+    public Notification getById(String notificationId) {
+        Notification notification = notificationDao.getById(notificationId);
+        if (notification == null){
+            return null;
+        }
+        if (notification.getStatus() == 0){
+            notification.setStatus(1);
+            notificationDao.updateByStatus(notificationId, 1);
+        }
+        return notification;
+    }
 }

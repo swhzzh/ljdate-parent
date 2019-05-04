@@ -21,6 +21,7 @@ public class User implements Serializable {
 
     @Length(min = 13, max = 13)
     private String sno;
+    private Long snoLong;
     @NotNull
     @NotBlank
     private String username;

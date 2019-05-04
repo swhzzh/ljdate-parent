@@ -10,11 +10,19 @@ public class FastDFSClient {
 	private StorageServer storageServer = null;
 	private StorageClient1 storageClient = null;
 	
-	public FastDFSClient(String conf) throws Exception {
-		if (conf.contains("classpath:")) {
-			conf = conf.replace("classpath:", this.getClass().getResource("/").getPath());
-		}
-		ClientGlobal.init(conf);
+//	public FastDFSClient(String conf) throws Exception {
+//		if (conf.contains("classpath:")) {
+//			conf = conf.replace("classpath:", this.getClass().getResource("/").getPath());
+//		}
+//		ClientGlobal.init(conf);
+//		trackerClient = new TrackerClient();
+//		trackerServer = trackerClient.getConnection();
+//		storageServer = null;
+//		storageClient = new StorageClient1(trackerServer, storageServer);
+//	}
+
+	public FastDFSClient(String trackerServers) throws Exception{
+		ClientGlobal.initByTrackers(trackerServers);
 		trackerClient = new TrackerClient();
 		trackerServer = trackerClient.getConnection();
 		storageServer = null;

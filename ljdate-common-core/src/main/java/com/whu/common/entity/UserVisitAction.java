@@ -19,5 +19,6 @@ public class UserVisitAction implements Serializable {
     private String searchKeyword;
     private String clickPostId;
     private String applyPostId;
+    private Long snowflakeId;
     private Integer valid;
 }

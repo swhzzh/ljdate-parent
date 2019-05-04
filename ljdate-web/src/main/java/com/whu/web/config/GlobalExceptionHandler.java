@@ -1,7 +1,9 @@
-package com.whu.common.exception;
+package com.whu.web.config;
 
+import com.whu.common.exception.GlobalException;
 import com.whu.common.result.CodeMsg;
 import com.whu.common.result.Result;
+import org.springframework.core.annotation.Order;
 import org.springframework.validation.BindException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -14,8 +16,24 @@ import java.util.List;
 @ControllerAdvice
 @ResponseBody
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(value = RuntimeException.class)
+    @Order(value = 1)
+    public Result<String> globalExceptionHandler(RuntimeException e){
+        e.printStackTrace();
+        try {
+            GlobalException ge = (GlobalException) e;
+            return Result.error(ge.getCm());
+        }
+        catch (Exception ex){
+            return Result.error(CodeMsg.SERVER_ERROR);
+        }
+    }
+
+
     @ExceptionHandler(value=Exception.class)
-    public Result<String> exceptionHandler(HttpServletRequest request, Exception e){
+    @Order(value = 2)
+    public Result<String> exceptionHandler(Exception e){
         e.printStackTrace();
         if(e instanceof GlobalException) {
             GlobalException ex = (GlobalException)e;

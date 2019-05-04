@@ -4,7 +4,7 @@ spring:
     name: ljdate-post
   datasource:
     # local
-    url: jdbc:mysql://120.79.74.63:3307/datedb?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false
+    url: jdbc:mysql://120.79.74.63:3307/datedb?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
     password: 1234
     driver-class-name: com.mysql.jdbc.Driver

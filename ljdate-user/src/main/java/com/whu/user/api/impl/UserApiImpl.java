@@ -45,6 +45,14 @@ public class UserApiImpl implements UserApi {
     @Override
     public String register(JSONObject reqParam) {
         User user = JSON.toJavaObject(reqParam, User.class);
+        if (user.getSno() == null){
+            throw new GlobalException(CodeMsg.REQ_PARAM_EMPTY);
+        }
+        if (userDao.getById(user.getSno()) != null){
+            throw new GlobalException(CodeMsg.USER_DUPLICATE);
+        }
+
+        user.setSnoLong(Long.valueOf(user.getSno()));
         user.setCreateTime(new Timestamp(System.currentTimeMillis()));
         userDao.insert(user);
         String token = UUIDUtil.uuid();
@@ -52,6 +60,7 @@ public class UserApiImpl implements UserApi {
         redisService.set(UserKey.token, token, user);
         // 2.添加userId - user到redis中, 维护在线列表
         redisService.set(UserKey.getById, user.getSno(), user);
+
         return token;
     }
 
@@ -161,7 +170,8 @@ public class UserApiImpl implements UserApi {
         try {
 
             //2、创建一个FastDFS的客户端
-            FastDFSClient fastDFSClient = new FastDFSClient("classpath:conf/fastdfs-client.conf");
+            String trackerServers = "120.79.74.63:22122";
+            FastDFSClient fastDFSClient = new FastDFSClient(trackerServers);
             //3、执行上传处理
             String path = fastDFSClient.uploadFile(avatar, extName);
             //4、拼接返回的url和ip地址，拼装成完整的url

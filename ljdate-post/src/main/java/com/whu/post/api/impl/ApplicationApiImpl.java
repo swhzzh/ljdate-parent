@@ -12,6 +12,7 @@ import com.whu.common.entity.UserVisitAction;
 import com.whu.common.exception.GlobalException;
 import com.whu.common.result.CodeMsg;
 import com.whu.common.util.UUIDUtil;
+import com.whu.common.vo.PostVO;
 import com.whu.post.api.ApplicationApi;
 import com.whu.post.api.NotificationApi;
 import com.whu.post.api.PostApi;
@@ -42,6 +43,9 @@ public class ApplicationApiImpl implements ApplicationApi {
     private NotificationApi notificationApi;
 
     @Autowired
+    private PostApi postApi;
+
+    @Autowired
     private MQSender mqSender;
 
     /**
@@ -65,6 +69,8 @@ public class ApplicationApiImpl implements ApplicationApi {
         UserVisitAction userVisitAction = new UserVisitAction();
         userVisitAction.setActionId(UUIDUtil.uuid());
         userVisitAction.setApplyPostId(application.getPostId());
+        PostVO postVO = postApi.getVOById(application.getPostId(), null);
+        userVisitAction.setSnowflakeId(postVO.getSnowflakeId());
         userVisitAction.setUserId(application.getApplicant());
         userVisitAction.setCreateTime(new Timestamp(System.currentTimeMillis()));
         mqSender.sendUserVisitActionMsg(userVisitAction);
@@ -80,6 +86,7 @@ public class ApplicationApiImpl implements ApplicationApi {
             notification.setApplicationId(application.getApplicationId());
             notification.setPostId(application.getPostId());
             notification.setReceiver(post.getPoster());
+            notification.setType(0);
             notification.setContent("有人向您的帖子发送了申请");
             notification.setCreateTime(new Timestamp(System.currentTimeMillis()));
             notificationApi.sendNotification(notification);
@@ -118,6 +125,7 @@ public class ApplicationApiImpl implements ApplicationApi {
         notification.setApplicationId(applicationId);
         notification.setPostId(postId);
         notification.setReceiver(poster);
+        notification.setType(1);
         notification.setContent(message);
         notification.setCreateTime(new Timestamp(System.currentTimeMillis()));
         notificationApi.sendNotification(notification);

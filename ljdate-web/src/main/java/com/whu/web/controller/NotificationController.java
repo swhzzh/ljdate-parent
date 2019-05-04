@@ -82,4 +82,19 @@ public class NotificationController {
         notificationApi.clearByStatus(user.getSno(), status);
         return Result.success("ok");
     }
+
+    /**
+     * 获取详情, 如果未读 则改为已读
+     *
+     * @param notificationId
+     * @return
+     */
+    @GetMapping("/detail/{notificationId}")
+    public Result<Notification> getById(@PathVariable String notificationId){
+        Notification notification = notificationApi.getById(notificationId);
+        if (notification == null){
+            return Result.error(CodeMsg.NOTIFICATION_NOT_EXIST);
+        }
+        return Result.success(notification);
+    }
 }

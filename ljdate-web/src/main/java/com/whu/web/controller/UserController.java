@@ -4,6 +4,7 @@ import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.fastjson.JSONObject;
 import com.whu.common.entity.Notification;
 import com.whu.common.entity.User;
+import com.whu.common.redis.RedisService;
 import com.whu.common.redis.UserKey;
 import com.whu.common.result.CodeMsg;
 import com.whu.common.result.Result;
@@ -32,6 +33,9 @@ public class UserController {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private RedisService redisService;
 
     /**
      * 注册
@@ -154,6 +158,25 @@ public class UserController {
 
 
     /**
+     * 登出
+     *
+     * @param request
+     * @param user
+     * @return
+     */
+    @PostMapping("/logout")
+    public Result<String> logout(HttpServletRequest request, User user){
+        if (user == null){
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+        String token = getCookieValue(request, "token");
+        redisService.delete(UserKey.token, token);
+        redisService.delete(UserKey.getById, user.getSno());
+        return Result.success("ok");
+    }
+
+
+    /**
      * 将token添加到cookie中, 并存储到redis中
      *
      * @param response
@@ -185,4 +208,6 @@ public class UserController {
         }
         return null;
     }
+
+
 }

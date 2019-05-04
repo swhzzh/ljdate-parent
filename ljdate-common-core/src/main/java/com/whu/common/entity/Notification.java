@@ -20,6 +20,7 @@ public class Notification implements Serializable {
     private String content;
     private String applicationId;
     private String postId;
+    private Integer type;
     private Integer status;
     private Integer valid;
     private Timestamp createTime;

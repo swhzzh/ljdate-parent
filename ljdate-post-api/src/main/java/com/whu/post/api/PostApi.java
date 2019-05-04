@@ -7,6 +7,7 @@ import com.whu.common.entity.User;
 import com.whu.common.vo.PostVO;
 import org.springframework.data.domain.Page;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
@@ -76,6 +77,16 @@ public interface PostApi {
     PageInfo<PostVO> listByPage(Integer pageNum, Integer pageSize);
 
     /**
+     * 根据种类列举Post
+     *
+     * @param category
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
+    PageInfo<PostVO> listByCategoryAndAreaAndStartTime(Integer category, Integer area, Timestamp startTime, Integer pageNum, Integer pageSize);
+
+    /**
      * 搜索 solr
      *
      * @param keyword
@@ -110,4 +121,10 @@ public interface PostApi {
      * @return
      */
     PageInfo<User> listMember(String postId, Integer pageNum, Integer pageSize);
+
+    /**
+     * 同步数据库和索引库
+     *
+     */
+    void synchronizeDBAndIndexDB();
 }
