@@ -51,6 +51,22 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
+        <!--<dependency>
+            <groupId>my.elasticsearch</groupId>
+            <artifactId>es-shaded</artifactId>
+        </dependency>-->
+        <!--<dependency>
+            <groupId>org.apache.mahout</groupId>
+            <artifactId>mahout-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.mahout</groupId>
+            <artifactId>mahout-integration</artifactId>
+        </dependency>-->
+        <!--<dependency>
+            <groupId>com.huaban</groupId>
+            <artifactId>jieba-analysis</artifactId>
+        </dependency>-->
     </dependencies>
 
     <build>

@@ -3,13 +3,17 @@ package com.whu.web.controller;
 import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.fastjson.JSONObject;
 import com.whu.common.entity.Notification;
+import com.whu.common.entity.Post;
 import com.whu.common.entity.User;
+import com.whu.common.exception.GlobalException;
 import com.whu.common.redis.RedisService;
 import com.whu.common.redis.UserKey;
 import com.whu.common.result.CodeMsg;
 import com.whu.common.result.Result;
+import com.whu.common.vo.PostVO;
 import com.whu.post.api.NotificationApi;
 import com.whu.user.api.UserApi;
+import com.whu.user.api.UserVisitActionApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +41,8 @@ public class UserController {
     @Autowired
     private RedisService redisService;
 
+    @Reference
+    private UserVisitActionApi userVisitActionApi;
     /**
      * 注册
      *
@@ -45,7 +51,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/register")
-    public Result<String> register(@RequestBody JSONObject reqParam, HttpServletResponse response){
+    public Result<String> register(@RequestBody JSONObject reqParam, HttpServletResponse response) throws GlobalException {
         String token = userApi.register(reqParam);
         addCookie(response, token);
         return Result.success("ok");
@@ -175,6 +181,24 @@ public class UserController {
         return Result.success("ok");
     }
 
+    /**
+     * 获取推荐的post
+     *
+     * @param user
+     * @return
+     */
+    @GetMapping("/recommend")
+    public Result<List<PostVO>> getRecommendPosts(User user){
+        String userId = null;
+        if (user != null){
+            userId = user.getSno();
+        }
+        List<PostVO> posts = userVisitActionApi.getRecommendedPosts(userId);
+        if (posts == null || posts.isEmpty()){
+            return Result.error(CodeMsg.SERVER_ERROR);
+        }
+        return Result.success(posts);
+    }
 
     /**
      * 将token添加到cookie中, 并存储到redis中

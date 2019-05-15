@@ -1,4 +1,4 @@
-package com.whu.post.dao;
+package com.whu.user.dao;
 
 import com.whu.common.entity.UserVisitAction;
 import org.apache.ibatis.annotations.Delete;
@@ -25,10 +25,10 @@ public interface UserVisitActionDao {
     @Select("select * from user_visit_action where user_id = #{userId} order by create_time limit 10")
     List<UserVisitAction> getByUserIdLimitNewest10(long userId);
 
-    @Select("select * from user_visit_action where search_keyword IS NULL and (TO_DAYS(NOW()) - TO_DAYS(create_time)<3) order by create_time desc limit 1000")
+    @Select("select * from user_visit_action where search_keyword IS NULL and (TO_DAYS(NOW()) - TO_DAYS(create_time)<30) order by create_time desc limit 1000")
     List<UserVisitAction> getActionsWhereSerachKeyWordisNull();
 
-    @Select("select * from user_visit_action where search_keyword IS NOT NULL and (TO_DAYS(NOW()) - TO_DAYS(create_time)<3) order by create_time desc limit 1000")
+    @Select("select * from user_visit_action where search_keyword IS NOT NULL and (TO_DAYS(NOW()) - TO_DAYS(create_time)<30) order by create_time desc limit 1000")
     List<UserVisitAction> getActionsWhereSearchKeyWordIsNotNull();
 
     @Delete("delete * from user_visit_action where click_post_id = #{postId} or apply_post_id = #{postId} ")

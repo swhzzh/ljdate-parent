@@ -27,13 +27,13 @@ public interface PostVORepository extends ElasticsearchRepository<PostVO, String
 
     Page<PostVO> findAllByAreaOrderByCreateTimeDesc(Integer area, Pageable pageable);
 
-    Page<PostVO> findAllByStartTimeBetweenOrderByCreateTimeDesc(Timestamp startTime, Timestamp endTime, Pageable pageable);
+    Page<PostVO> findAllByStartTimeBetweenOrderByCreateTimeDesc(Long startTime, Long endTime, Pageable pageable);
 
     Page<PostVO> findAllByCategoryAndAreaOrderByCreateTimeDesc(Integer category, Integer area, Pageable pageable);
 
-    Page<PostVO> findAllByCategoryAndStartTimeBetweenOrderByCreateTimeDesc(Integer category, Timestamp startTime, Timestamp endTime, Pageable pageable);
+    Page<PostVO> findAllByCategoryAndStartTimeBetweenOrderByCreateTimeDesc(Integer category, Long startTime, Long endTime, Pageable pageable);
 
-    Page<PostVO> findAllByAreaAndStartTimeBetweenOrderByCreateTimeDesc(Integer area, Timestamp startTime, Timestamp endTime, Pageable pageable);
+    Page<PostVO> findAllByAreaAndStartTimeBetweenOrderByCreateTimeDesc(Integer area, Long startTime, Long endTime, Pageable pageable);
 
-    Page<PostVO> findAllByCategoryAndAreaAndStartTimeBetweenOrderByCreateTimeDesc(Integer category, Integer area, Timestamp startTime, Timestamp endTime, Pageable pageable);
+    Page<PostVO> findAllByCategoryAndAreaAndStartTimeBetweenOrderByCreateTimeDesc(Integer category, Integer area, Long startTime, Long endTime, Pageable pageable);
 }

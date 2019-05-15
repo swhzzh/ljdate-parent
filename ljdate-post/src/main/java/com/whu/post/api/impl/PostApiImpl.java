@@ -5,9 +5,11 @@ import com.alibaba.dubbo.config.annotation.Service;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.whu.common.entity.*;
+import com.whu.common.exception.GlobalException;
 import com.whu.common.redis.PostKey;
 import com.whu.common.redis.RedisService;
 import com.whu.common.redis.UserKey;
+import com.whu.common.result.CodeMsg;
 import com.whu.common.util.FastDFSClient;
 import com.whu.common.util.SnowFlake;
 import com.whu.common.util.UUIDUtil;
@@ -18,8 +20,10 @@ import com.whu.post.api.PostApi;
 import com.whu.post.dao.PostDao;
 import com.whu.post.dao.PostMemberDao;
 import com.whu.post.dao.PostVORepository;
+import com.whu.post.dao.UserVisitActionDao;
 import com.whu.post.rabbitmq.MQSender;
 import javafx.geometry.Pos;
+import jdk.nashorn.internal.objects.Global;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MultiMatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -38,6 +42,7 @@ import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilde
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +62,9 @@ public class PostApiImpl implements PostApi {
 
     @Autowired
     private ApplicationApi applicationApi;
+
+    @Autowired
+    private UserVisitActionDao userVisitActionDao;
 
     @Autowired
     private RedisService redisService;
@@ -188,7 +196,7 @@ public class PostApiImpl implements PostApi {
      * @return
      */
     @Override
-    public PostVO getVOById(String postId, String userId) {
+    public PostVO getVOById(String postId, String userId) throws GlobalException {
         // 1.查缓存
         PostVO postVO = redisService.get(PostKey.getById, postId, PostVO.class);
         if (postVO != null){
@@ -204,6 +212,10 @@ public class PostApiImpl implements PostApi {
             // 3.查数据库写入索引库
             postVO = postDao.getVOById(postId);
             postVORepository.save(postVO);
+        }
+
+        if (postVO == null){
+            throw new GlobalException(CodeMsg.POST_NOT_EXIST);
         }
 
         // 4.写入缓存
@@ -263,6 +275,9 @@ public class PostApiImpl implements PostApi {
         postDao.deleteById(postId);
         redisService.delete(PostKey.getById, postId);
         postVORepository.deleteByPostId(postId);
+
+        // 删除对应的访问记录
+        userVisitActionDao.deleteByPostId(postId);
     }
 
     /**
@@ -273,14 +288,21 @@ public class PostApiImpl implements PostApi {
      */
     @Override
     public void clear(String userId, Integer status) {
+        List<Post> posts = new ArrayList<>();
         if (status == -1){
+            posts = postDao.getByUserId(userId);
             postDao.clear(userId);
             postVORepository.deleteByPoster(userId);
             // TODO: 19-5-4 同步redis
         }
         else {
+            posts = postDao.getByUserIdAndStatus(userId, status);
             postDao.clearByStatus(userId, status);
             postVORepository.deleteByPosterAndStatus(userId, status);
+        }
+        for (Post post : posts) {
+            String postId = post.getPostId();
+            userVisitActionDao.deleteByPostId(postId);
         }
     }
 
@@ -371,7 +393,7 @@ public class PostApiImpl implements PostApi {
                     page = postVORepository.findAll(pageable);
                 }
                 else {
-                    page = postVORepository.findAllByStartTimeBetweenOrderByCreateTimeDesc(startTime,endTime, pageable);
+                    page = postVORepository.findAllByStartTimeBetweenOrderByCreateTimeDesc(startTime.getTime() ,endTime.getTime(), pageable);
                 }
             }
             else {
@@ -379,7 +401,7 @@ public class PostApiImpl implements PostApi {
                     page = postVORepository.findAllByAreaOrderByCreateTimeDesc(area, pageable);
                 }
                 else {
-                    page = postVORepository.findAllByAreaAndStartTimeBetweenOrderByCreateTimeDesc(area, startTime, endTime, pageable);
+                    page = postVORepository.findAllByAreaAndStartTimeBetweenOrderByCreateTimeDesc(area, startTime.getTime(), endTime.getTime(), pageable);
                 }
             }
         }
@@ -389,7 +411,7 @@ public class PostApiImpl implements PostApi {
                     page = postVORepository.findAllByCategoryOrderByCreateTimeDesc(category, pageable);
                 }
                 else {
-                    page = postVORepository.findAllByCategoryAndStartTimeBetweenOrderByCreateTimeDesc(category, startTime,endTime, pageable);
+                    page = postVORepository.findAllByCategoryAndStartTimeBetweenOrderByCreateTimeDesc(category, startTime.getTime(),endTime.getTime(), pageable);
                 }
             }
             else {
@@ -397,7 +419,7 @@ public class PostApiImpl implements PostApi {
                     page = postVORepository.findAllByCategoryAndAreaOrderByCreateTimeDesc(category, area, pageable);
                 }
                 else {
-                    page = postVORepository.findAllByCategoryAndAreaAndStartTimeBetweenOrderByCreateTimeDesc(category, area, startTime, endTime, pageable);
+                    page = postVORepository.findAllByCategoryAndAreaAndStartTimeBetweenOrderByCreateTimeDesc(category, area, startTime.getTime(), endTime.getTime(), pageable);
                 }
             }
         }
@@ -529,9 +551,9 @@ public class PostApiImpl implements PostApi {
 
             if (post.getCurNum() < post.getMaxNum()){
                 // 1.增加人数
-                postDao.addNum(postId, new Date());
+                postDao.addNum(postId, new Timestamp(System.currentTimeMillis()));
                 if (post.getCurNum() + 1 == post.getMaxNum()){
-                    postDao.changeStatus(postId, 1, new Date());
+                    postDao.changeStatus(postId, 1, new Timestamp(System.currentTimeMillis()));
                 }
                 PostVO postVO = getVOById(postId, null);
                 postVO.setCurNum(post.getCurNum() + 1);
@@ -555,6 +577,8 @@ public class PostApiImpl implements PostApi {
         return notification;
     }
 
+
+
     /**
      * 列出post所有成员
      *
@@ -571,6 +595,33 @@ public class PostApiImpl implements PostApi {
         pageInfo.setPageNum(pageNum);
         pageInfo.setPageSize(pageSize);
         return pageInfo;
+    }
+
+    /**
+     * 成员退出post
+     *
+     * @param memberId
+     * @param postId
+     */
+    @Override
+    @Transactional
+    public void quit(String memberId, String postId) throws GlobalException{
+       // 1.post成员减一
+        Post post = postDao.getById(postId);
+        if (post == null){
+            throw new GlobalException(CodeMsg.POST_NOT_EXIST);
+        }
+        postDao.decNum(postId, new Timestamp(System.currentTimeMillis()));
+        if (post.getCurNum().equals(post.getMaxNum())){
+            postDao.changeStatus(postId, 0, new Timestamp(System.currentTimeMillis()));
+        }
+        PostVO postVO = getVOById(postId, null);
+        postVO.setCurNum(post.getCurNum() + 1);
+        redisService.set(PostKey.getById, postId, postVO);
+        postVORepository.deleteByPostId(postId);
+        postVORepository.save(postVO);
+       // 2.删除postMember
+        postMemberDao.delete(postId, memberId);
     }
 
     /**

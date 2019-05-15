@@ -17,13 +17,11 @@ import java.util.List;
 @ResponseBody
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(value = RuntimeException.class)
-    @Order(value = 1)
-    public Result<String> globalExceptionHandler(RuntimeException e){
+    @ExceptionHandler(value = GlobalException.class)
+    public Result<String> globalExceptionHandler(GlobalException e){
         e.printStackTrace();
         try {
-            GlobalException ge = (GlobalException) e;
-            return Result.error(ge.getCm());
+            return Result.error(e.getCm());
         }
         catch (Exception ex){
             return Result.error(CodeMsg.SERVER_ERROR);
@@ -32,7 +30,6 @@ public class GlobalExceptionHandler {
 
 
     @ExceptionHandler(value=Exception.class)
-    @Order(value = 2)
     public Result<String> exceptionHandler(Exception e){
         e.printStackTrace();
         if(e instanceof GlobalException) {

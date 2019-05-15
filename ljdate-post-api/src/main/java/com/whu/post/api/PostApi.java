@@ -4,6 +4,7 @@ import com.github.pagehelper.PageInfo;
 import com.whu.common.entity.Notification;
 import com.whu.common.entity.Post;
 import com.whu.common.entity.User;
+import com.whu.common.exception.GlobalException;
 import com.whu.common.vo.PostVO;
 import org.springframework.data.domain.Page;
 
@@ -34,7 +35,7 @@ public interface PostApi {
      * @param postId
      * @return
      */
-    PostVO getVOById(String postId, String userId);
+    PostVO getVOById(String postId, String userId) throws GlobalException;
 
     /**
      * 更新Post
@@ -121,6 +122,14 @@ public interface PostApi {
      * @return
      */
     PageInfo<User> listMember(String postId, Integer pageNum, Integer pageSize);
+
+    /**
+     * 成员退出post
+     *
+     * @param memberId
+     * @param postId
+     */
+    void quit(String memberId, String postId) throws GlobalException;
 
     /**
      * 同步数据库和索引库

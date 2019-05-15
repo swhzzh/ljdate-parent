@@ -52,11 +52,11 @@ public class PostVO implements Serializable {
 
     private String images;
 
-    @Field(type = FieldType.Date)
+
     private Timestamp createTime;
-    @Field(type = FieldType.Date)
+
     private Timestamp updateTime;
-    @Field(type = FieldType.Date)
+
     private Timestamp startTime;
 
     private Integer valid;

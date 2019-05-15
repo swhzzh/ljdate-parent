@@ -6,12 +6,15 @@ import com.github.pagehelper.PageInfo;
 import com.whu.common.entity.Notification;
 import com.whu.common.entity.Post;
 import com.whu.common.entity.User;
+import com.whu.common.entity.UserVisitAction;
+import com.whu.common.exception.GlobalException;
 import com.whu.common.redis.RedisService;
 import com.whu.common.redis.UserKey;
 import com.whu.common.result.CodeMsg;
 import com.whu.common.result.Result;
 import com.whu.common.vo.PostVO;
 import com.whu.post.api.PostApi;
+import com.whu.user.api.UserVisitActionApi;
 import javafx.geometry.Pos;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -38,6 +42,8 @@ public class PostController {
 
     @Autowired
     private RedisService redisService;
+
+
 
     /**
      * 发布Post
@@ -272,7 +278,7 @@ public class PostController {
         }
         else {
             // yyyy-hh-mm hh:mm:ss
-            startTime = Timestamp.valueOf(time);
+            startTime = new Timestamp(Long.valueOf(time));
         }
 
         String _pageNum = request.getParameter("pageNum");
@@ -288,6 +294,9 @@ public class PostController {
         PageInfo<PostVO> pageInfo = postApi.listByCategoryAndAreaAndStartTime(category, area, startTime, pageNum, pageSize);
         return Result.success(pageInfo);
     }
+
+
+
 
     /**
      * 更新申请状态
@@ -326,7 +335,7 @@ public class PostController {
     public Result<PageInfo<User>> listMember(HttpServletRequest request){
         String postId = request.getParameter("postId");
         if (postId == null){
-            return Result.error(CodeMsg.SESSION_ERROR);
+            return Result.error(CodeMsg.REQ_PARAM_EMPTY);
         }
         String _pageNum = request.getParameter("pageNum");
         if (_pageNum == null){
@@ -339,6 +348,31 @@ public class PostController {
         }
         Integer pageSize = Integer.valueOf(_pageSize);
         return Result.success(postApi.listMember(postId, pageNum, pageSize));
+    }
+
+    /**
+     * 成员退出Post 如果是自己主动退出, memberId可为空, 如果是poster踢出, memberId必须有值.
+     *
+     * @param reqParam
+     * @param user
+     * @return
+     */
+    @PostMapping("/quit")
+    public Result<String> quit(@RequestBody JSONObject reqParam, User user){
+        if (user == null){
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+        String memberId = reqParam.getString("memberId");
+        if (memberId == null){
+            memberId = user.getSno();
+        }
+
+        String postId = reqParam.getString("postId");
+        if (postId == null){
+            return Result.error(CodeMsg.REQ_PARAM_EMPTY);
+        }
+        postApi.quit(memberId, postId);
+        return Result.success("ok");
     }
 
     /**

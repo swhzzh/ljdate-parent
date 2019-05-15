@@ -1,15 +1,13 @@
-package com.whu.post.dao;
+package com.whu.user.dao;
 
 
 import com.whu.common.entity.Post;
 import com.whu.common.entity.User;
 import com.whu.common.vo.PostVO;
-import javafx.geometry.Pos;
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
-import java.util.Date;
 import java.util.List;
 
 @Mapper
@@ -72,7 +70,7 @@ public interface PostDao {
     @Delete("delete from post where poster = #{userId} and status = #{status}")
     void clearByStatus(String userId, Integer status);
 
-    @Select("select u.sno, u.sno_long, u.username, u.phone_no, u.email, u.avatar, u.credit " +
+    @Select("select u.sno, u.snoLong, u.username, u.phone_no, u.email, u.avatar, u.credit " +
             "from post_member p join user u on p.member_id = u.sno " +
             "where p.post_id = #{postId}")
     List<User> listMember(String postId);
@@ -131,14 +129,27 @@ public interface PostDao {
     /**
      * 功能描述: 获得最近三天最新1000条post
      */
-    @Select("select * from post where tag is not null and (TO_DAYS(NOW()) - TO_DAYS(create_time)<3) order by create_time desc limit 1000")
+    @Select("select * from post where tag is not null and (TO_DAYS(NOW()) - TO_DAYS(create_time)<30) order by create_time desc limit 1000")
     List<Post> selectAll();
 
     /**
      * 功能描述: 获得最近三天最热门的5篇文章
      */
-    @Select("select p.* from post p, user_visit_action u where p.snowflake_id = u.snowflake_id and (TO_DAYS(NOW()) - TO_DAYS(p.create_time)<3) group by u.snowflake_id order by count(u.snowflake_id) desc limit 5")
-    List<Post> getTop5();
+    @Select("select p.*, u.username, u.avatar " +
+            "from post p join user u on p.poster = u.sno " +
+            "where (TO_DAYS(NOW()) - TO_DAYS(p.create_time)<30) and p.snowflake_id in " +
+            "(select t.snowflake_id from " +
+            "(select snowflake_id from user_visit_action group by snowflake_id order by count(snowflake_id) desc limit 5) as t)")
+    List<PostVO> getTop5();
+
+    @Select("select p.post_id, p.snowflake_id, p.snowflake_id_str, p.title, p.area_str, p.category_str, p.area, p.address, p.content, p.poster, p.category, p.tag, p.max_num, " +
+            "p.cur_num, p.images, p.start_time, p.create_time, " +
+            "u.username, u.avatar " +
+            "from post p join user u on p.poster=u.sno order by create_time desc limit 5")
+    List<PostVO> listVO5();
+
+    @Select("select snowflake_id from user_visit_action group by snowflake_id order by count(snowflake_id) desc limit 5")
+    List<Long> getSnowflakeIds();
 
     @Select("select * from post where snowflake_id = #{id}")
     Post getBySnowFlakeId(Long id);

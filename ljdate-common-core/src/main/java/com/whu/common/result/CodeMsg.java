@@ -24,6 +24,7 @@ public class CodeMsg implements Serializable {
     //Post模块 5003XX
     public static CodeMsg POST_NOT_EXIST = new CodeMsg(500310, "Post不存在");
 
+
     //Application模块
     public static CodeMsg APPLICATION_NOT_EXIST = new CodeMsg(500410, "Application不存在");
     public static CodeMsg APPLICATION_DUPLICATE = new CodeMsg(500411, "重复申请");

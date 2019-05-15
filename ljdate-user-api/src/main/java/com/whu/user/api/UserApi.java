@@ -4,6 +4,7 @@ package com.whu.user.api;
 
 import com.alibaba.fastjson.JSONObject;
 import com.whu.common.entity.User;
+import com.whu.common.exception.GlobalException;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,7 +17,7 @@ public interface UserApi {
      *
      * @param reqParam 请求参数
      */
-    String register(JSONObject reqParam);
+    String register(JSONObject reqParam) throws GlobalException;
 
     /**
      * 登录
@@ -25,7 +26,7 @@ public interface UserApi {
      * @param password 密码
      * @return
      */
-    String login(String sno, String password);
+    String login(String sno, String password) throws GlobalException;
 
     /**
      * 通过id获取User
@@ -33,7 +34,7 @@ public interface UserApi {
      * @param sno
      * @return
      */
-    User getById(String sno);
+    User getById(String sno) throws GlobalException;
 
     /**
      * 通过token获取user

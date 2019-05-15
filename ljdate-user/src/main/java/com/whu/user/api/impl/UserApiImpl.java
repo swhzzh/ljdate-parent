@@ -43,7 +43,7 @@ public class UserApiImpl implements UserApi {
      * @param reqParam 请求参数
      */
     @Override
-    public String register(JSONObject reqParam) {
+    public String register(JSONObject reqParam) throws GlobalException{
         User user = JSON.toJavaObject(reqParam, User.class);
         if (user.getSno() == null){
             throw new GlobalException(CodeMsg.REQ_PARAM_EMPTY);
@@ -72,7 +72,7 @@ public class UserApiImpl implements UserApi {
      * @return
      */
     @Override
-    public String login(String sno, String password) {
+    public String login(String sno, String password) throws GlobalException{
         if (StringUtils.isEmpty(sno) || StringUtils.isEmpty(password))
         {
             throw new GlobalException(CodeMsg.SERVER_ERROR);
@@ -102,7 +102,7 @@ public class UserApiImpl implements UserApi {
      * @return
      */
     @Override
-    public User getById(String sno) {
+    public User getById(String sno) throws GlobalException{
         // 1.从redis中获取
         User user = redisService.get(UserKey.getById, sno, User.class);
         if (user == null){
