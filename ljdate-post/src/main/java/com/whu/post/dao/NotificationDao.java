@@ -14,7 +14,7 @@ public interface NotificationDao {
             "values(#{notificationId}, #{receiver}, #{content}, #{type}, #{applicationId}, #{postId}, #{createTime})")
     void insert(Notification notification);
 
-    @Select("select * from notification where receiver = #{userId}")
+    @Select("select * from notification where receiver = #{userId} order by create_time DESC")
     List<Notification> listByUserId(String userId);
 
     @Select("select * from notification where receiver = #{userId} and status = #{status} order by create_time DESC")

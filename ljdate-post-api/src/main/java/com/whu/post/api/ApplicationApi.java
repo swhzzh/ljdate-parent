@@ -23,7 +23,7 @@ public interface ApplicationApi {
      * @param applicationId
      * @param status
      */
-    Notification handleApplication(String applicationId, String postId, String poster, Integer status);
+    Notification handleApplication(String applicationId, String postId, String applicant, Integer status);
 
     /**
      * 列出post的所有的申请

@@ -103,7 +103,7 @@ public class ApplicationApiImpl implements ApplicationApi {
      * @param status
      */
     @Override
-    public Notification handleApplication(String applicationId, String postId, String poster, Integer status) {
+    public Notification handleApplication(String applicationId, String postId, String applicant, Integer status) {
         // 1.插入数据库
         applicationDao.changeStatus(applicationId, status, new Date());
         String message = null;
@@ -124,7 +124,7 @@ public class ApplicationApiImpl implements ApplicationApi {
         notification.setNotificationId(UUIDUtil.uuid());
         notification.setApplicationId(applicationId);
         notification.setPostId(postId);
-        notification.setReceiver(poster);
+        notification.setReceiver(applicant);
         notification.setType(1);
         notification.setContent(message);
         notification.setCreateTime(new Timestamp(System.currentTimeMillis()));

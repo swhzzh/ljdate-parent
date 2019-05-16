@@ -19,13 +19,13 @@ public interface ApplicationDao {
     @Update("update application set status = #{status}, update_time = #{updateTime} where application_id = #{applicationId}")
     void changeStatus(String applicationId, Integer status, Date updateTime);
 
-    @Select("select * from application where applicant = #{userId}")
+    @Select("select * from application where applicant = #{userId} order by create_time DESC")
     List<Application> listByUserId(String userId);
 
-    @Select("select * from application where applicant = #{userId} and status = #{status}")
+    @Select("select * from application where applicant = #{userId} and status = #{status} order by create_time DESC")
     List<Application> listByUserIdAndStatus(String userId, Integer status);
 
-    @Select("select * from application where post_id = #{postId}")
+    @Select("select * from application where post_id = #{postId} order by create_time DESC")
     List<Application> listByPostId(String postId);
 
     @Select("select * from application where post_id = #{postId} and applicant = #{applicant}")

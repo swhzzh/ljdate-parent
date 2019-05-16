@@ -145,4 +145,10 @@ public interface PostDao {
 
     @Select("select * from post where snowflake_id = #{snowflakeId} ")
     PostVO getBySnowflakeId(Long snowflakeId);
+
+    @Select("select p.*, u.username, u.avatar " +
+            "from post p join user u on p.poster = u.sno " +
+            "where p.post_id in " +
+            "(select t.post_id from (select * from post_member where member_id = #{memberId} ) as t)  order by p.create_time DESC")
+    List<PostVO> listVOByMemberId(String memberId);
 }

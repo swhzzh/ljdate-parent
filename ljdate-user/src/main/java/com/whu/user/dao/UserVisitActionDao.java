@@ -31,9 +31,9 @@ public interface UserVisitActionDao {
     @Select("select * from user_visit_action where search_keyword IS NOT NULL and (TO_DAYS(NOW()) - TO_DAYS(create_time)<30) order by create_time desc limit 1000")
     List<UserVisitAction> getActionsWhereSearchKeyWordIsNotNull();
 
-    @Delete("delete * from user_visit_action where click_post_id = #{postId} or apply_post_id = #{postId} ")
+    @Delete("delete from user_visit_action where click_post_id = #{postId} or apply_post_id = #{postId} ")
     void deleteByPostId(String postId);
 
-    @Delete("delete * from user_visit_action where ")
+    @Delete("delete from user_visit_action where ")
     void deleteByUserId(String userId);
 }

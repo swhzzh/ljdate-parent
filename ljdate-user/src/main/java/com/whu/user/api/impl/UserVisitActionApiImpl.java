@@ -53,11 +53,12 @@ public class UserVisitActionApiImpl implements UserVisitActionApi {
         }
 
         Object cache = LocalCache.get(userId);
-        if (cache == null){
-            return postDao.getTop5();
-        }
         // TODO: 19-5-15 数量不够 随机添加
         List<PostVO> ret = (List<PostVO>) cache;
+        if (cache == null){
+            ret =  postDao.getTop5();
+        }
+
         if (ret.size() < 5){
             int remain = 5 - ret.size();
             List<PostVO> random5 = postDao.listVO5();
@@ -101,13 +102,15 @@ public class UserVisitActionApiImpl implements UserVisitActionApi {
             for (RecommendedItem recommendedItem : recommendedItemList1.get(uid)) {
                 recommends.put(recommendedItem.getItemID(), recommendedItem.getValue());
             }
-            if (recommends != null){
-                treeMap.put(uid, recommends);
-            }
+            treeMap.put(uid, recommends);
+
         }
         //将两种方式的推荐按1-1的权重计算综合推荐，选择前五推荐
         for (long uid : recommendedItemList2.keySet()) {
-            TreeMap<Long, Float> recommends = treeMap.get(uid);
+            TreeMap<Long, Float> recommends = new TreeMap<>();
+            if (treeMap.containsKey(uid)){
+                recommends = treeMap.get(uid);
+            }
             for (RecommendedItem recommendedItem : recommendedItemList2.get(uid)) {
                 float flag = 0;
                 if (recommends.containsKey(recommendedItem.getItemID())) {
@@ -279,7 +282,7 @@ public class UserVisitActionApiImpl implements UserVisitActionApi {
                 //权重是从1到5排列的float数据
                 float prefer = itemPrefer.get(item) / total * 4 + 1;
                 //权重小于1.5的去掉
-                if (prefer - 1.5 > 0) {
+                if (prefer - 1 > 0) {
                     //将权值和对应的itemId号填入postPrefer
                     for (Post post : posts) {
                         String content = post.getTitle() + " " + post.getContent();
@@ -289,10 +292,10 @@ public class UserVisitActionApiImpl implements UserVisitActionApi {
                         }
                         if (content.contains(item)) {
                             float add = 0f;
-                            if (post.getContent().contains(item)) {
+                            if (post.getContent()!=null && post.getContent().contains(item)) {
                                 add += 0.4;
                             }
-                            if (post.getTitle().contains(item)) {
+                            if (post.getTitle()!=null && post.getTitle().contains(item)) {
                                 add += 0.4;
                             }
                             //喜欢程度最大不能超过5

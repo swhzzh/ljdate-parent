@@ -124,6 +124,16 @@ public interface PostApi {
     PageInfo<User> listMember(String postId, Integer pageNum, Integer pageSize);
 
     /**
+     * 列出所有用户参加的post
+     *
+     * @param memberId
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
+    PageInfo<PostVO> listPostVOByMemberId(String memberId, Integer pageNum, Integer pageSize);
+
+    /**
      * 成员退出post
      *
      * @param memberId

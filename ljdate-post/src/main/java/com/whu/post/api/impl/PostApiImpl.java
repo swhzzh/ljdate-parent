@@ -568,10 +568,10 @@ public class PostApiImpl implements PostApi {
                 pm.setCreateTime(new Timestamp(System.currentTimeMillis()));
                 postMemberDao.insert(pm);
                 // 3.更改application状态
-                notification = applicationApi.handleApplication(applicationId, postId, post.getPoster(), 1);
+                notification = applicationApi.handleApplication(applicationId, postId, application.getApplicant(), 1);
             }
             else {
-                notification = applicationApi.handleApplication(applicationId, postId, post.getPoster(),3);
+                notification = applicationApi.handleApplication(applicationId, postId, application.getApplicant(),3);
             }
         }
         return notification;
@@ -592,6 +592,24 @@ public class PostApiImpl implements PostApi {
         PageHelper.startPage(pageNum, pageSize);
         List<User> users = postDao.listMember(postId);
         PageInfo<User> pageInfo = new PageInfo<>(users);
+        pageInfo.setPageNum(pageNum);
+        pageInfo.setPageSize(pageSize);
+        return pageInfo;
+    }
+
+    /**
+     * 列出所有用户参加的post
+     *
+     * @param memberId
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
+    @Override
+    public PageInfo<PostVO> listPostVOByMemberId(String memberId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<PostVO> postVOs = postDao.listVOByMemberId(memberId);
+        PageInfo<PostVO> pageInfo = new PageInfo<>(postVOs);
         pageInfo.setPageNum(pageNum);
         pageInfo.setPageSize(pageSize);
         return pageInfo;

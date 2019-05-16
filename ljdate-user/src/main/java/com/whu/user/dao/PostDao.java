@@ -129,7 +129,7 @@ public interface PostDao {
     /**
      * 功能描述: 获得最近三天最新1000条post
      */
-    @Select("select * from post where tag is not null and (TO_DAYS(NOW()) - TO_DAYS(create_time)<30) order by create_time desc limit 1000")
+    @Select("select * from post where (TO_DAYS(NOW()) - TO_DAYS(create_time)<30) order by create_time desc limit 1000")
     List<Post> selectAll();
 
     /**

@@ -188,7 +188,7 @@ public class PostController {
 
         String _pageNum = request.getParameter("pageNum");
         if (_pageNum == null){
-            _pageNum = "1";
+            _pageNum = "0";
         }
         Integer pageNum = Integer.valueOf(_pageNum);
         String _pageSize = request.getParameter("pageSize");
@@ -210,7 +210,7 @@ public class PostController {
 
         String _pageNum = request.getParameter("pageNum");
         if (_pageNum == null){
-            _pageNum = "1";
+            _pageNum = "0";
         }
         Integer pageNum = Integer.valueOf(_pageNum);
         String _pageSize = request.getParameter("pageSize");
@@ -238,7 +238,7 @@ public class PostController {
 
         String _pageNum = request.getParameter("pageNum");
         if (_pageNum == null){
-            _pageNum = "1";
+            _pageNum = "0";
         }
         Integer pageNum = Integer.valueOf(_pageNum);
         String _pageSize = request.getParameter("pageSize");
@@ -283,7 +283,7 @@ public class PostController {
 
         String _pageNum = request.getParameter("pageNum");
         if (_pageNum == null){
-            _pageNum = "1";
+            _pageNum = "0";
         }
         Integer pageNum = Integer.valueOf(_pageNum);
         String _pageSize = request.getParameter("pageSize");
@@ -339,7 +339,7 @@ public class PostController {
         }
         String _pageNum = request.getParameter("pageNum");
         if (_pageNum == null){
-            _pageNum = "1";
+            _pageNum = "0";
         }
         Integer pageNum = Integer.valueOf(_pageNum);
         String _pageSize = request.getParameter("pageSize");
@@ -348,6 +348,31 @@ public class PostController {
         }
         Integer pageSize = Integer.valueOf(_pageSize);
         return Result.success(postApi.listMember(postId, pageNum, pageSize));
+    }
+
+    /**
+     * 获取用户参加的所有post
+     *
+     * @param request
+     * @param user
+     * @return
+     */
+    @GetMapping("/attended")
+    public Result<PageInfo<PostVO>> listAttendedPost(HttpServletRequest request, User user){
+        if (user == null){
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
+        String _pageNum = request.getParameter("pageNum");
+        if (_pageNum == null){
+            _pageNum = "0";
+        }
+        Integer pageNum = Integer.valueOf(_pageNum);
+        String _pageSize = request.getParameter("pageSize");
+        if (_pageSize == null){
+            _pageSize = "10";
+        }
+        Integer pageSize = Integer.valueOf(_pageSize);
+        return Result.success(postApi.listPostVOByMemberId(user.getSno(), pageNum, pageSize));
     }
 
     /**

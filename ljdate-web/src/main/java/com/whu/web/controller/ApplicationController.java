@@ -75,7 +75,7 @@ public class ApplicationController {
         }
         String _pageNum = request.getParameter("pageNum");
         if (_pageNum == null){
-            _pageNum = "1";
+            _pageNum = "0";
         }
         Integer pageNum = Integer.valueOf(_pageNum);
         String _pageSize = request.getParameter("pageSize");
@@ -106,7 +106,7 @@ public class ApplicationController {
         Integer status = Integer.valueOf(_status);
         String _pageNum = request.getParameter("pageNum");
         if (_pageNum == null){
-            _pageNum = "1";
+            _pageNum = "0";
         }
         Integer pageNum = Integer.valueOf(_pageNum);
         String _pageSize = request.getParameter("pageSize");

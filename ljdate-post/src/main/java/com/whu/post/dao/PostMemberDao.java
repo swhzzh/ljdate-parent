@@ -14,6 +14,8 @@ public interface PostMemberDao {
             "values(#{postId}, #{memberId}, #{createTime})")
     void insert(PostMember postMember);
 
+
+
     @Delete("delete from post_member where post_id = #{postId} and member_id = #{memberId}")
     void delete(String postId, String memberId);
 }
